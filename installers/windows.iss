@@ -11,14 +11,14 @@ AppPublisherURL=https://github.com/teremno/quietshot
 DefaultDirName={localappdata}\Programs\QuietShot
 DefaultGroupName=QuietShot
 PrivilegesRequired=lowest
-OutputDir=release
+OutputDir=..\release
 OutputBaseFilename=QuietShot-{#AppVersion}-Windows-x64-Setup
 Compression=lzma2
 SolidCompression=yes
 UninstallDisplayIcon={app}\QuietShot.exe
 
 [Files]
-Source: "dist\QuietShot\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
+Source: "..\dist\QuietShot\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\QuietShot"; Filename: "{app}\QuietShot.exe"
