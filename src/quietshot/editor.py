@@ -173,7 +173,7 @@ class Editor(QMainWindow):
         if not self.canvas.final_image().save(str(path), "PNG", 100):
             QMessageBox.critical(self, "Save failed", f"Could not write {path}")
             return
-        self.statusBar().showMessage(f"Saved {path}", 5000)
+        self.close()
 
     def closeEvent(self, event) -> None:
         self.finished.emit()

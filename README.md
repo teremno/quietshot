@@ -10,6 +10,7 @@ A small screenshot utility for people who share screen details with colleagues a
 - Select a region on the monitor under the pointer.
 - Red arrows, rectangles, freehand marks, and solid covers for private details.
 - Undo, copy to clipboard, and save as PNG at the source pixel dimensions.
+- The editor closes after a successful PNG save; cancelling the save dialog keeps it open.
 - Timestamped filenames with millisecond precision and a collision suffix.
 
 ## Install and run

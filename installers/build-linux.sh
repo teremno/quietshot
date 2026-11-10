@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version="${QUIETSHOT_VERSION:-0.2.0}"
+version="${QUIETSHOT_VERSION:-0.2.1}"
 root="$(pwd)/build/deb-root"
 mkdir -p "$root/DEBIAN" "$root/opt/quietshot" "$root/usr/share/applications" release
 cp -a dist/QuietShot/. "$root/opt/quietshot/"
