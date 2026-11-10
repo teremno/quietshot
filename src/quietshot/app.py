@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QPoint, QTimer
 from PySide6.QtGui import QCursor, QIcon, QPainter, QPixmap
-from PySide6.QtWidgets import QApplication, QMessageBox, QMenu, QSystemTrayIcon
+from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
 from quietshot.capture import CaptureError, QtScreenCapture
 from quietshot.config import load_settings

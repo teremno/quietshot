@@ -28,13 +28,13 @@ def load_settings() -> Settings:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
         if not isinstance(data, dict):
-            raise ValueError("settings.json must contain an object")
+            raise TypeError("settings.json must contain an object")
         hotkey = data.get("hotkey", Settings.hotkey)
         output_dir = data.get("output_dir", "")
         if not isinstance(hotkey, str) or not isinstance(output_dir, str):
-            raise ValueError("hotkey and output_dir must be strings")
+            raise TypeError("hotkey and output_dir must be strings")
         return Settings(hotkey=hotkey, output_dir=output_dir)
-    except (OSError, ValueError, json.JSONDecodeError):
+    except (OSError, TypeError, ValueError):
         LOG.exception("Cannot load settings from %s; using defaults", path)
         return Settings()
 
