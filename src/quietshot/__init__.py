@@ -1,0 +1,2 @@
+"""QuietShot screenshot utility."""
+
