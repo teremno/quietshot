@@ -42,13 +42,13 @@ The default save folder is `~/Pictures/QuietShot`. You can change the hotkey and
 | Windows 11 | Qt screen capture | `pynput` | Initial development platform |
 | macOS | Qt screen capture | `pynput` | Grant Screen Recording and Accessibility permissions if requested by macOS |
 | Linux X11 | Qt screen capture | `pynput` | Requires an active graphical session |
-| Linux Wayland | Pending portal adapter | Pending portal integration | The app reports this explicitly; no silent blank screenshots |
+| Linux Wayland | Qt screen capture via PipeWire/desktop portal | Floating button | Experimental; the OS asks which display to share. Global hotkeys and always-on-top behavior depend on the compositor. |
 
 Platform rows describe the implementation path, not completed device testing. Automated CI checks run on all three operating systems; interactive capture and permissions still need manual validation on each one.
 
 ## Architecture
 
-- `capture.py`: screen capture boundary. Add an `xdg-desktop-portal` implementation here for Linux Wayland.
+- `capture.py`: synchronous Qt capture on Windows/macOS/X11 and a separate asynchronous Qt/portal adapter for Linux Wayland.
 - `hotkeys.py`: global hotkey boundary.
 - `selection.py`: pixel-correct region selection.
 - `annotations.py`: image-space annotations and original-size export.
@@ -67,7 +67,7 @@ python -m pytest -q
 
 ## Known limitations
 
-- Linux Wayland requires a portal-based backend and is not supported in v0.1.
+- Linux Wayland capture is experimental and needs a working PipeWire/desktop portal. Its global hotkey may not work; the floating button remains the primary trigger.
 - The first version captures the monitor under the pointer; cross-monitor selections are not yet supported.
 - Protected content and some applications may intentionally appear blank because of operating-system capture restrictions.
 - No packaged installers or signed binaries yet. Run from Python for now.
