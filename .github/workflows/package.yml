@@ -30,7 +30,10 @@ jobs:
         with:
           python-version: '3.12'
       - if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libxkbcommon0 libxcb-cursor0
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libpulse0 libxkbcommon0 libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-keysyms1 libxcb-shape0 libxcb-xkb1 libxcb-icccm4
       - run: python -m pip install -e ".[dev,package]"
       - run: python -m ruff check .
       - run: python -m pytest -q
@@ -45,8 +48,10 @@ jobs:
       - if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          & dist/QuietShot/QuietShot.exe --self-test
-          if ($LASTEXITCODE -ne 0) { throw 'Frozen app self-test failed' }
+          $process = Start-Process -FilePath (Resolve-Path 'dist/QuietShot/QuietShot.exe') -ArgumentList '--self-test' -PassThru -WindowStyle Hidden
+          try { Wait-Process -Id $process.Id -Timeout 30 }
+          catch { Stop-Process -Id $process.Id -Force; throw 'Frozen app self-test timed out' }
+          if ($process.ExitCode -ne 0) { throw "Frozen app self-test failed: $($process.ExitCode)" }
       - if: runner.os == 'macOS'
         run: QT_QPA_PLATFORM=offscreen dist/QuietShot.app/Contents/MacOS/QuietShot --self-test
       - if: runner.os == 'Linux'

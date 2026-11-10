@@ -12,7 +12,7 @@ Section: graphics
 Priority: optional
 Architecture: amd64
 Maintainer: QuietShot contributors <noreply@github.com>
-Depends: libegl1
+Depends: libegl1, libpulse0, libxkbcommon0, libxkbcommon-x11-0, libxcb-cursor0, libxcb-keysyms1, libxcb-shape0, libxcb-xkb1, libxcb-icccm4
 Description: Floating screenshot tool with full-resolution PNG annotations
 EOF
 cat > "$root/usr/share/applications/quietshot.desktop" <<EOF
