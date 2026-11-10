@@ -158,7 +158,11 @@ class Editor(QMainWindow):
         self.statusBar().showMessage("Copied full-resolution image to clipboard", 3000)
 
     def save_image(self) -> None:
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.output_dir.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            QMessageBox.critical(self, "Save failed", f"Could not create screenshot folder: {exc}")
+            return
         proposed = next_screenshot_path(self.output_dir)
         chosen, _ = QFileDialog.getSaveFileName(self, "Save screenshot", str(proposed), "PNG (*.png)")
         if not chosen:

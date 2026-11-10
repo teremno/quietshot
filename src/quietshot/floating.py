@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QMenu, QWidget
 
 class FloatingButton(QWidget):
     capture_requested = Signal()
+    settings_requested = Signal()
     quit_requested = Signal()
 
     def __init__(self) -> None:
@@ -70,6 +71,7 @@ class FloatingButton(QWidget):
     def contextMenuEvent(self, event) -> None:
         menu = QMenu(self)
         menu.addAction("Capture area", self.capture_requested.emit)
+        menu.addAction("Settings…", self.settings_requested.emit)
         menu.addSeparator()
         menu.addAction("Quit QuietShot", self.quit_requested.emit)
         menu.exec(event.globalPos())

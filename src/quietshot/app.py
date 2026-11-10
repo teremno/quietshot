@@ -15,11 +15,12 @@ from quietshot.capture import (
     WaylandPortalCapture,
     is_wayland,
 )
-from quietshot.config import load_settings
+from quietshot.config import load_settings, save_settings
 from quietshot.editor import Editor
 from quietshot.floating import FloatingButton
 from quietshot.hotkeys import GlobalHotkey
 from quietshot.selection import SelectionOverlay
+from quietshot.settings_dialog import SettingsDialog
 
 LOG = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ class QuietShotApp:
             self.portal_capture.failed.connect(self._capture_failed)
         self.floating = FloatingButton()
         self.floating.capture_requested.connect(self.start_capture)
+        self.floating.settings_requested.connect(self.open_settings)
         self.floating.quit_requested.connect(qt_app.quit)
         self.overlay: SelectionOverlay | None = None
         self.editor: Editor | None = None
@@ -61,6 +63,7 @@ class QuietShotApp:
         menu.addAction("Capture area", self.start_capture)
         menu.addAction("Show floating button", self.floating.show)
         menu.addAction("Hide floating button", self.floating.hide)
+        menu.addAction("Settings…", self.open_settings)
         menu.addSeparator()
         menu.addAction("Quit", self.qt_app.quit)
         self.tray.setContextMenu(menu)
@@ -135,11 +138,32 @@ class QuietShotApp:
             self.tray.showMessage("QuietShot hotkey unavailable", message,
                                   QSystemTrayIcon.MessageIcon.Warning, 5000)
 
+    def open_settings(self) -> None:
+        dialog = SettingsDialog(self.settings)
+        if dialog.exec() != SettingsDialog.DialogCode.Accepted:
+            return
+        updated = dialog.result_settings()
+        try:
+            save_settings(updated)
+        except OSError as exc:
+            LOG.exception("Could not save settings")
+            QMessageBox.critical(None, "QuietShot", f"Could not save settings: {exc}")
+            return
+        if updated.hotkey != self.settings.hotkey:
+            self.hotkey.stop()
+            self.hotkey.combination = updated.hotkey
+            self.hotkey.start()
+        self.settings = updated
+
 
 def main() -> int:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     qt_app = QApplication(sys.argv)
     qt_app.setApplicationName("QuietShot")
     qt_app.setOrganizationName("QuietShot")
+    if "--self-test" in sys.argv:
+        from quietshot.smoke import run_smoke
+
+        return run_smoke()
     qt_app.setQuitOnLastWindowClosed(False)
     return QuietShotApp(qt_app).run()

@@ -4,8 +4,9 @@ A small screenshot utility for people who share screen details with colleagues a
 
 ## Features
 
-- Floating, draggable button; right-click for capture or quit.
+- Floating, draggable button; right-click for capture, settings, or quit.
 - Global hotkey and optional system tray menu.
+- Settings window for the shortcut and save folder; changes apply immediately.
 - Select a region on the monitor under the pointer.
 - Red arrows, rectangles, freehand marks, and solid covers for private details.
 - Undo, copy to clipboard, and save as PNG at the source pixel dimensions.
@@ -24,7 +25,7 @@ python -m quietshot
 
 On Windows PowerShell, activation is `.venv\Scripts\Activate.ps1`. On macOS/Linux, use `source .venv/bin/activate`.
 
-The default save folder is `~/Pictures/QuietShot`. You can change the hotkey and default folder in the settings file at the location returned by Qt's `AppConfigLocation` for QuietShot:
+The default save folder is `~/Pictures/QuietShot`. Open **Settings…** from the button's right-click menu or the tray menu to change the shortcut and folder. The settings are stored in Qt's `AppConfigLocation` for QuietShot as JSON:
 
 ```json
 {
@@ -33,7 +34,17 @@ The default save folder is `~/Pictures/QuietShot`. You can change the hotkey and
 }
 ```
 
-`pynput` hotkey syntax is used. Restart QuietShot after editing the file.
+The settings window records one shortcut with a modifier plus a letter, digit, or F1–F12. Advanced users can also edit the JSON using `pynput` hotkey syntax, then restart QuietShot.
+
+## Installers
+
+Download the installer for your OS from [GitHub Releases](https://github.com/teremno/quietshot/releases) when a release is available:
+
+- Windows x64: `QuietShot-*-Windows-x64-Setup.exe` installs for the current user and adds an uninstaller.
+- macOS Apple Silicon or Intel: choose the matching `.dmg`, open it, and drag QuietShot to Applications.
+- Linux x64: install the `.deb` with your package manager. It includes a desktop launcher.
+
+These packages include Python and app dependencies. The Windows and macOS packages are currently unsigned, so the OS may show a publisher warning. Linux builds target Ubuntu 22.04 x64 for broad glibc compatibility, but other distributions are not yet verified.
 
 ## Platform status
 
@@ -56,6 +67,8 @@ Platform rows describe the implementation path, not completed device testing. Au
 - `floating.py`: movable always-on-top trigger.
 - `app.py`: coordinates the workflow and tray.
 - `filenames.py`: timestamp and collision-safe names.
+- `settings_dialog.py`: user-facing preferences.
+- `installers/`: platform package definitions; `package.yml` builds each OS on its own runner.
 
 ## Development
 
@@ -70,7 +83,7 @@ python -m pytest -q
 - Linux Wayland capture is experimental and needs a working PipeWire/desktop portal. Its global hotkey may not work; the floating button remains the primary trigger.
 - The first version captures the monitor under the pointer; cross-monitor selections are not yet supported.
 - Protected content and some applications may intentionally appear blank because of operating-system capture restrictions.
-- No packaged installers or signed binaries yet. Run from Python for now.
+- The macOS and Windows installers are not code-signed or notarized yet.
 
 ## License
 
