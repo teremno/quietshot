@@ -19,6 +19,7 @@ from quietshot.config import load_settings, save_settings
 from quietshot.editor import Editor
 from quietshot.floating import FloatingButton
 from quietshot.hotkeys import GlobalHotkey
+from quietshot.save_location import SaveLocationStore
 from quietshot.selection import SelectionOverlay
 from quietshot.settings_dialog import SettingsDialog
 
@@ -29,6 +30,7 @@ class QuietShotApp:
     def __init__(self, qt_app: QApplication) -> None:
         self.qt_app = qt_app
         self.settings = load_settings()
+        self.save_locations = SaveLocationStore()
         self.capture_backend = QtScreenCapture()
         self.portal_capture = WaylandPortalCapture() if is_wayland() else None
         if self.portal_capture is not None:
@@ -120,11 +122,22 @@ class QuietShotApp:
 
     def _open_editor(self, image: QPixmap) -> None:
         self.overlay = None
-        output = Path(self.settings.output_dir).expanduser() if self.settings.output_dir else Path.home() / "Pictures" / "QuietShot"
-        self.editor = Editor(image, output)
+        fallback = (
+            Path(self.settings.output_dir).expanduser()
+            if self.settings.output_dir
+            else Path.home() / "Pictures" / "QuietShot"
+        )
+        self.editor = Editor(image, self.save_locations.preferred_dir(fallback))
+        self.editor.saved.connect(self._remember_save_location)
         self.editor.finished.connect(self._finish_capture)
         self.editor.show()
         self.editor.activateWindow()
+
+    def _remember_save_location(self, path: Path) -> None:
+        try:
+            self.save_locations.remember(path.parent)
+        except OSError:
+            LOG.exception("Screenshot saved, but last destination could not be remembered")
 
     def _finish_capture(self) -> None:
         self._capture_pending = False

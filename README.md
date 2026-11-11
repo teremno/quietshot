@@ -11,6 +11,7 @@ A small screenshot utility for people who share screen details with colleagues a
 - Red arrows, rectangles, freehand marks, and solid covers for private details.
 - Undo, copy to clipboard, and save as PNG at the source pixel dimensions.
 - The editor closes after a successful PNG save; cancelling the save dialog keeps it open.
+- The next Save PNG dialog starts in the folder used for the last successful save, even after restarting QuietShot.
 - Timestamped filenames with millisecond precision and a collision suffix.
 
 ## Install and run
@@ -26,7 +27,7 @@ python -m quietshot
 
 On Windows PowerShell, activation is `.venv\Scripts\Activate.ps1`. On macOS/Linux, use `source .venv/bin/activate`.
 
-The default save folder is `~/Pictures/QuietShot`. Open **Settings…** from the button's right-click menu or the tray menu to change the shortcut and folder. The settings are stored in Qt's `AppConfigLocation` for QuietShot as JSON:
+The default save folder is `~/Pictures/QuietShot`. Open **Settings…** from the button's right-click menu or the tray menu to change the shortcut and initial folder. After a successful save, the last used folder takes precedence. Preferences and the recent folder are stored as separate JSON files in Qt's `AppConfigLocation` for QuietShot:
 
 ```json
 {
@@ -69,6 +70,7 @@ Platform rows describe the implementation path, not completed device testing. Au
 - `app.py`: coordinates the workflow and tray.
 - `filenames.py`: timestamp and collision-safe names.
 - `settings_dialog.py`: user-facing preferences.
+- `save_location.py`: recent save destination, persisted separately from preferences.
 - `installers/`: platform package definitions; `package.yml` builds each OS on its own runner.
 
 ## Development

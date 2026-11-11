@@ -99,6 +99,7 @@ class Canvas(QWidget):
 
 class Editor(QMainWindow):
     finished = Signal()
+    saved = Signal(object)
 
     def __init__(self, image: QPixmap, output_dir: Path) -> None:
         super().__init__()
@@ -173,6 +174,7 @@ class Editor(QMainWindow):
         if not self.canvas.final_image().save(str(path), "PNG", 100):
             QMessageBox.critical(self, "Save failed", f"Could not write {path}")
             return
+        self.saved.emit(path)
         self.close()
 
     def closeEvent(self, event) -> None:

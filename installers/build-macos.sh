@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version="${QUIETSHOT_VERSION:-0.2.1}"
+version="${QUIETSHOT_VERSION:-0.2.2}"
 architecture="${QUIETSHOT_ARCH:?Set QUIETSHOT_ARCH to arm64 or x64}"
 mkdir -p build/dmg-root release
 cp -R dist/QuietShot.app build/dmg-root/

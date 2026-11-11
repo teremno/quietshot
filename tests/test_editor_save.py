@@ -1,12 +1,14 @@
 """The editor stays open until a screenshot is actually saved."""
 
 import os
+from pathlib import Path
 
 import pytest
 from PySide6.QtGui import QColor, QImage, QPixmap
 from PySide6.QtWidgets import QApplication, QFileDialog
 
 from quietshot.editor import Editor
+from quietshot.save_location import SaveLocationStore
 
 
 @pytest.fixture(scope="module")
@@ -22,6 +24,8 @@ def test_successful_save_closes_editor(tmp_path, monkeypatch, app):
     chosen.parent.mkdir()
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_args: (str(chosen), "PNG (*.png)"))
     editor = Editor(QPixmap.fromImage(image), tmp_path)
+    locations = SaveLocationStore(tmp_path / "state.json")
+    editor.saved.connect(lambda path: locations.remember(path.parent))
     finished = []
     editor.finished.connect(lambda: finished.append(True))
     editor.show()
@@ -34,6 +38,22 @@ def test_successful_save_closes_editor(tmp_path, monkeypatch, app):
     assert saved.size() == image.size()
     assert not editor.isVisible()
     assert finished == [True]
+    assert SaveLocationStore(tmp_path / "state.json").preferred_dir(tmp_path) == chosen.parent
+
+    proposed_paths = []
+
+    def cancel_next_dialog(_parent, _title, proposed, _filter):
+        proposed_paths.append(Path(proposed))
+        return "", ""
+
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", cancel_next_dialog)
+    next_editor = Editor(
+        QPixmap.fromImage(image),
+        SaveLocationStore(tmp_path / "state.json").preferred_dir(tmp_path),
+    )
+    next_editor.save_image()
+    assert proposed_paths[0].parent == chosen.parent
+    next_editor.close()
 
 
 def test_cancelled_save_keeps_editor_open(tmp_path, monkeypatch, app):
@@ -41,10 +61,13 @@ def test_cancelled_save_keeps_editor_open(tmp_path, monkeypatch, app):
     image.fill(QColor("#ffffff"))
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_args: ("", ""))
     editor = Editor(QPixmap.fromImage(image), tmp_path)
+    locations = SaveLocationStore(tmp_path / "state.json")
+    editor.saved.connect(lambda path: locations.remember(path.parent))
     editor.show()
     app.processEvents()
 
     editor.save_image()
 
     assert editor.isVisible()
+    assert locations.preferred_dir(tmp_path) == tmp_path
     editor.close()

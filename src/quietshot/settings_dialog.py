@@ -48,10 +48,13 @@ class SettingsDialog(QDialog):
         browse = QPushButton("Browse…")
         browse.clicked.connect(self._browse)
         destination.addWidget(browse)
-        form.addRow("Save folder", destination)
+        form.addRow("Default folder", destination)
         layout.addLayout(form)
 
-        note = QLabel("The shortcut changes immediately after saving. On Wayland, global shortcuts may be unavailable.")
+        note = QLabel(
+            "After the first save, QuietShot suggests the last folder you used. "
+            "The shortcut changes immediately. On Wayland, global shortcuts may be unavailable."
+        )
         note.setWordWrap(True)
         note.setStyleSheet("color: #94a3b8;")
         layout.addWidget(note)

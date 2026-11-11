@@ -64,7 +64,7 @@ jobs:
           choco install innosetup --no-progress -y
           $compiler = Get-ChildItem 'C:\Program Files*\Inno Setup*\ISCC.exe' -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty FullName
           if (-not $compiler) { throw 'Inno Setup compiler not found' }
-          & $compiler /DAppVersion=0.2.1 installers/windows.iss
+          & $compiler /DAppVersion=0.2.2 installers/windows.iss
           if ($LASTEXITCODE -ne 0) { throw 'Inno Setup compile failed' }
       - uses: actions/upload-artifact@v4
         with:
