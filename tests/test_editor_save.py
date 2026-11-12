@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from PySide6.QtGui import QColor, QImage, QPixmap
-from PySide6.QtWidgets import QApplication, QFileDialog
+from PySide6.QtWidgets import QApplication, QColorDialog, QFileDialog
 
 from quietshot.editor import Editor
 from quietshot.save_location import SaveLocationStore
@@ -70,4 +70,24 @@ def test_cancelled_save_keeps_editor_open(tmp_path, monkeypatch, app):
 
     assert editor.isVisible()
     assert locations.preferred_dir(tmp_path) == tmp_path
+    editor.close()
+
+
+def test_style_controls_change_new_annotation_settings(tmp_path, monkeypatch, app):
+    image = QImage(120, 80, QImage.Format.Format_ARGB32)
+    image.fill(QColor("#ffffff"))
+    editor = Editor(QPixmap.fromImage(image), tmp_path)
+    editor._colors["#3b82f6"].click()
+    editor.thickness.setValue(12)
+    assert editor.canvas.stroke_color == "#3b82f6"
+    assert editor.canvas.stroke_width == 12
+
+    monkeypatch.setattr(QColorDialog, "getColor", lambda *_args: QColor("#a855f7"))
+    editor._choose_color()
+    assert editor.canvas.stroke_color == "#a855f7"
+
+    editor._tools["redact"].click()
+    assert not editor.style_controls.isEnabled()
+    editor._tools["arrow"].click()
+    assert editor.style_controls.isEnabled()
     editor.close()

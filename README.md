@@ -8,7 +8,7 @@ A small screenshot utility for people who share screen details with colleagues a
 - Global hotkey and optional system tray menu.
 - Settings window for the shortcut and save folder; changes apply immediately.
 - Select a region on the monitor under the pointer.
-- Red arrows, rectangles, freehand marks, and solid covers for private details.
+- Arrows, rectangles, and freehand marks with six preset colors, a custom color picker, and 1–20 px thickness. Covers for private details stay solid black.
 - Undo, copy to clipboard, and save as PNG at the source pixel dimensions.
 - The editor closes after a successful PNG save; cancelling the save dialog keeps it open.
 - The next Save PNG dialog starts in the folder used for the last successful save, even after restarting QuietShot.

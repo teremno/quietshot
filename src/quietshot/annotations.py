@@ -10,6 +10,8 @@ from PySide6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen, QPolygon
 class Annotation:
     kind: str
     points: list[QPointF]
+    color: str = "#ef4444"
+    width: int = 4
 
 
 def render_annotations(base: QImage, annotations: list[Annotation]) -> QImage:
@@ -31,7 +33,7 @@ def paint_annotations(painter: QPainter, annotations: list[Annotation]) -> None:
         if item.kind == "redact":
             painter.fillRect(QRectF(start, end).normalized(), QColor("#111111"))
             continue
-        painter.setPen(QPen(QColor("#ef4444"), 4, Qt.PenStyle.SolidLine,
+        painter.setPen(QPen(QColor(item.color), item.width, Qt.PenStyle.SolidLine,
                             Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         if item.kind == "arrow":
             painter.drawLine(start, end)
@@ -39,9 +41,13 @@ def paint_annotations(painter: QPainter, annotations: list[Annotation]) -> None:
             length = (delta.x() ** 2 + delta.y() ** 2) ** 0.5
             if length > 1:
                 ux, uy = delta.x() / length, delta.y() / length
-                left = QPointF(end.x() - 15 * ux - 8 * uy, end.y() - 15 * uy + 8 * ux)
-                right = QPointF(end.x() - 15 * ux + 8 * uy, end.y() - 15 * uy - 8 * ux)
-                painter.setBrush(QColor("#ef4444"))
+                head_length = min(36, max(10, item.width * 3))
+                head_half_width = min(20, max(6, item.width * 1.8))
+                left = QPointF(end.x() - head_length * ux - head_half_width * uy,
+                               end.y() - head_length * uy + head_half_width * ux)
+                right = QPointF(end.x() - head_length * ux + head_half_width * uy,
+                                end.y() - head_length * uy - head_half_width * ux)
+                painter.setBrush(QColor(item.color))
                 painter.drawPolygon(QPolygonF([end, left, right]))
                 painter.setBrush(Qt.BrushStyle.NoBrush)
         elif item.kind == "rectangle":

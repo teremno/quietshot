@@ -6,6 +6,7 @@ from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QImage, QKeySequence, QMouseEvent, QPainter, QPixmap, QShortcut
 from PySide6.QtWidgets import (
     QApplication,
+    QColorDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -13,6 +14,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QSizePolicy,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -31,6 +33,8 @@ class Canvas(QWidget):
         self.annotations: list[Annotation] = []
         self.active: Annotation | None = None
         self.tool = "arrow"
+        self.stroke_color = "#ef4444"
+        self.stroke_width = 4
         self.setMouseTracking(True)
         self.setMinimumSize(400, 260)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -66,7 +70,8 @@ class Canvas(QWidget):
     def mousePressEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton and self._image_rect().contains(event.position()):
             point = self._image_point(event.position())
-            self.active = Annotation(self.tool, [point, point])
+            self.active = Annotation(self.tool, [point, point], self.stroke_color,
+                                     self.stroke_width)
             self.update()
 
     def mouseMoveEvent(self, event: QMouseEvent) -> None:
@@ -123,7 +128,6 @@ class Editor(QMainWindow):
             button.clicked.connect(lambda checked=False, k=kind: self._set_tool(k))
             toolbar.addWidget(button)
             self._tools[kind] = button
-        self._set_tool("arrow")
         toolbar.addStretch()
         for label, callback in (("Undo", self.canvas.undo), ("Copy", self.copy_image),
                                 ("Save PNG", self.save_image)):
@@ -132,6 +136,37 @@ class Editor(QMainWindow):
             button.clicked.connect(callback)
             toolbar.addWidget(button)
         layout.addLayout(toolbar)
+        self.style_controls = QWidget()
+        style = QHBoxLayout(self.style_controls)
+        style.setContentsMargins(0, 0, 0, 0)
+        style.setSpacing(8)
+        style.addWidget(QLabel("Color"))
+        self._colors: dict[str, QPushButton] = {}
+        for name, color in (("Red", "#ef4444"), ("Yellow", "#facc15"),
+                            ("Green", "#22c55e"), ("Blue", "#3b82f6"),
+                            ("White", "#ffffff"), ("Black", "#111111")):
+            button = QPushButton()
+            button.setFixedSize(30, 30)
+            button.setToolTip(name)
+            button.setAccessibleName(f"{name} annotation color")
+            button.clicked.connect(lambda checked=False, c=color: self._set_color(c))
+            style.addWidget(button)
+            self._colors[color] = button
+        custom = QPushButton("More…")
+        custom.setMinimumHeight(34)
+        custom.clicked.connect(self._choose_color)
+        style.addWidget(custom)
+        style.addSpacing(16)
+        style.addWidget(QLabel("Thickness"))
+        self.thickness = QSpinBox()
+        self.thickness.setRange(1, 20)
+        self.thickness.setValue(self.canvas.stroke_width)
+        self.thickness.setSuffix(" px")
+        self.thickness.setAccessibleName("Annotation thickness")
+        self.thickness.valueChanged.connect(self._set_width)
+        style.addWidget(self.thickness)
+        style.addStretch()
+        layout.addWidget(self.style_controls)
         layout.addWidget(self.canvas)
         hint = QLabel("Full-size PNG · Esc closes · Ctrl+Z undoes · Ctrl+S saves")
         hint.setStyleSheet("color: #94a3b8; padding: 2px;")
@@ -143,16 +178,36 @@ class Editor(QMainWindow):
             "QPushButton:hover { background: #475569; }"
             "QPushButton:checked { background: #92400e; border-color: #fbbf24; }"
             "QPushButton:focus { border: 2px solid #fbbf24; }"
+            "QSpinBox { background: #0f172a; color: #f8fafc; border: 1px solid #64748b;"
+            " border-radius: 6px; padding: 6px; min-width: 66px; }"
+            "QSpinBox:focus { border: 2px solid #fbbf24; }"
         )
         self.setCentralWidget(container)
+        self._set_color(self.canvas.stroke_color)
+        self._set_tool("arrow")
         QShortcut(QKeySequence.StandardKey.Undo, self, self.canvas.undo)
         QShortcut(QKeySequence.StandardKey.Save, self, self.save_image)
         QShortcut(QKeySequence(Qt.Key.Key_Escape), self, self.close)
 
     def _set_tool(self, kind: str) -> None:
         self.canvas.tool = kind
+        self.style_controls.setEnabled(kind != "redact")
         for name, button in self._tools.items():
             button.setChecked(name == kind)
+
+    def _set_color(self, color: str) -> None:
+        self.canvas.stroke_color = color
+        for swatch, button in self._colors.items():
+            border = "3px solid #fbbf24" if swatch == color else "1px solid #94a3b8"
+            button.setStyleSheet(f"background: {swatch}; border: {border}; border-radius: 15px;")
+
+    def _choose_color(self) -> None:
+        chosen = QColorDialog.getColor(QColor(self.canvas.stroke_color), self, "Annotation color")
+        if chosen.isValid():
+            self._set_color(chosen.name())
+
+    def _set_width(self, width: int) -> None:
+        self.canvas.stroke_width = width
 
     def copy_image(self) -> None:
         QApplication.clipboard().setImage(self.canvas.final_image())
