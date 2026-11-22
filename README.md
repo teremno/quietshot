@@ -5,6 +5,7 @@ A small screenshot utility for people who share screen details with colleagues a
 ## Features
 
 - Floating, draggable button; right-click for capture, settings, or quit.
+- Floating-button recovery checks every two seconds while idle: restores visibility, stacking, and position within an available monitor. Explicitly hiding it in the tray is respected.
 - Global hotkey and optional system tray menu.
 - Settings window for the shortcut and save folder; changes apply immediately.
 - Select a region on the monitor under the pointer.
@@ -67,6 +68,7 @@ Platform rows describe the implementation path, not completed device testing. Au
 - `annotations.py`: image-space annotations and original-size export.
 - `editor.py`: annotation UI and save/copy workflow.
 - `floating.py`: movable always-on-top trigger.
+- `button_visibility.py`: idle recovery and explicit show/hide intent.
 - `app.py`: coordinates the workflow and tray.
 - `filenames.py`: timestamp and collision-safe names.
 - `settings_dialog.py`: user-facing preferences.

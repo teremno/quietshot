@@ -19,6 +19,7 @@ class SelectionOverlay(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.start: QPoint | None = None
         self.end: QPoint | None = None
+        self._completed = False
 
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
@@ -67,13 +68,20 @@ class SelectionOverlay(QWidget):
             self.update()
             return
         cropped = self.image.copy(self._source_rect(area))
+        self._completed = True
         self.selected.emit(cropped)
         self.close()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:
         if event.key() == Qt.Key.Key_Escape:
-            self.cancelled.emit()
             self.close()
         else:
             super().keyPressEvent(event)
+
+    def closeEvent(self, event) -> None:
+        # Window-manager close (including Alt+F4) must release the capture state too.
+        if not self._completed:
+            self._completed = True
+            self.cancelled.emit()
+        super().closeEvent(event)
 

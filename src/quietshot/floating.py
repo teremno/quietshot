@@ -2,7 +2,7 @@
 
 from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPen
-from PySide6.QtWidgets import QMenu, QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
 
 class FloatingButton(QWidget):
@@ -15,6 +15,8 @@ class FloatingButton(QWidget):
                  Qt.WindowType.WindowStaysOnTopHint)
         super().__init__(None, flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+        self.setAttribute(Qt.WidgetAttribute.WA_MacAlwaysShowToolWindow)
         self.setFixedSize(64, 64)
         self.setWindowTitle("QuietShot capture")
         self.setToolTip("Click to capture · Drag to move · Right-click for menu")
@@ -22,6 +24,32 @@ class FloatingButton(QWidget):
         self._origin: QPoint | None = None
         self._dragged = False
         self._hover = False
+
+    @property
+    def interacting(self) -> bool:
+        return self._press is not None
+
+    def keep_on_screen(self) -> None:
+        """Keep the entire button inside the nearest available desktop area."""
+        screens = QApplication.screens()
+        if not screens:
+            return
+        bounds = [screen.availableGeometry() for screen in screens]
+        if any(area.contains(self.geometry()) for area in bounds):
+            return
+        center = self.geometry().center()
+        area = min(bounds, key=lambda rect: (rect.center() - center).manhattanLength())
+        self.move(max(area.left(), min(self.x(), area.right() - self.width() + 1)),
+                  max(area.top(), min(self.y(), area.bottom() - self.height() + 1)))
+
+    def restore(self) -> None:
+        """Restore visibility and stacking without taking keyboard focus."""
+        self.keep_on_screen()
+        if self.isMinimized():
+            self.showNormal()
+        else:
+            self.show()
+        self.raise_()
 
     def paintEvent(self, _event) -> None:
         painter = QPainter(self)
@@ -64,6 +92,8 @@ class FloatingButton(QWidget):
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:
         if event.button() == Qt.MouseButton.LeftButton and self._press is not None:
+            if self._dragged:
+                self.keep_on_screen()
             if not self._dragged:
                 self.capture_requested.emit()
             self._press = self._origin = None

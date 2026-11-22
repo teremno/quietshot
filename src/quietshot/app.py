@@ -8,6 +8,7 @@ from PySide6.QtCore import QPoint, QTimer
 from PySide6.QtGui import QCursor, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QMessageBox, QSystemTrayIcon
 
+from quietshot.button_visibility import ButtonVisibility
 from quietshot.capture import (
     CapturedScreen,
     CaptureError,
@@ -43,12 +44,14 @@ class QuietShotApp:
         self.overlay: SelectionOverlay | None = None
         self.editor: Editor | None = None
         self._capture_pending = False
+        self.button_visibility = ButtonVisibility(self.floating, self._capture_busy)
         self.hotkey = GlobalHotkey(self.settings.hotkey)
         self.hotkey.activated.connect(self.start_capture)
         self.hotkey.failed.connect(self._hotkey_failed)
         self.tray: QSystemTrayIcon | None = None
         self._setup_tray()
         qt_app.aboutToQuit.connect(self.hotkey.stop)
+        qt_app.aboutToQuit.connect(self.button_visibility.timer.stop)
 
     def _setup_tray(self) -> None:
         if not QSystemTrayIcon.isSystemTrayAvailable():
@@ -63,8 +66,8 @@ class QuietShotApp:
         self.tray = QSystemTrayIcon(QIcon(icon))
         menu = QMenu()
         menu.addAction("Capture area", self.start_capture)
-        menu.addAction("Show floating button", self.floating.show)
-        menu.addAction("Hide floating button", self.floating.hide)
+        menu.addAction("Show floating button", self.button_visibility.show)
+        menu.addAction("Hide floating button", self.button_visibility.hide)
         menu.addAction("Settings…", self.open_settings)
         menu.addSeparator()
         menu.addAction("Quit", self.qt_app.quit)
@@ -78,7 +81,8 @@ class QuietShotApp:
             raise RuntimeError("No display found")
         bounds = screen.availableGeometry()
         self.floating.move(QPoint(bounds.right() - 80, bounds.center().y()))
-        self.floating.show()
+        self.button_visibility.show()
+        self.button_visibility.timer.start()
         self.hotkey.start()
         return self.qt_app.exec()
 
@@ -92,20 +96,32 @@ class QuietShotApp:
         self.floating.hide()
         QTimer.singleShot(250, lambda: self._capture_after_hide(screen))
 
+    def _capture_busy(self) -> bool:
+        return self._capture_pending or self.overlay is not None or self.editor is not None
+
     def _capture_after_hide(self, screen) -> None:
-        if self.portal_capture is not None:
-            self.portal_capture.start(screen)
-            return
         try:
+            if self.portal_capture is not None:
+                self.portal_capture.start(screen)
+                return
             captured = self.capture_backend.capture(screen)
         except CaptureError as exc:
             self._capture_failed(str(exc))
+            return
+        except Exception:
+            LOG.exception("Unexpected screen capture failure")
+            self._capture_failed("Could not capture the screen. Please try again.")
             return
         self._show_selection(captured)
 
     def _show_selection(self, captured: CapturedScreen) -> None:
         self._capture_pending = False
-        self.overlay = SelectionOverlay(captured)
+        try:
+            self.overlay = SelectionOverlay(captured)
+        except Exception:
+            LOG.exception("Could not create selection overlay")
+            self._capture_failed("Could not open the area selector. Please try again.")
+            return
         self.overlay.selected.connect(self._open_editor)
         self.overlay.cancelled.connect(self._finish_capture)
         if is_wayland():
@@ -115,9 +131,8 @@ class QuietShotApp:
         self.overlay.activateWindow()
 
     def _capture_failed(self, message: str) -> None:
-        self._capture_pending = False
         LOG.warning("Capture unavailable: %s", message)
-        self.floating.show()
+        self._finish_capture()
         QMessageBox.warning(None, "QuietShot", message)
 
     def _open_editor(self, image: QPixmap) -> None:
@@ -127,7 +142,12 @@ class QuietShotApp:
             if self.settings.output_dir
             else Path.home() / "Pictures" / "QuietShot"
         )
-        self.editor = Editor(image, self.save_locations.preferred_dir(fallback))
+        try:
+            self.editor = Editor(image, self.save_locations.preferred_dir(fallback))
+        except Exception:
+            LOG.exception("Could not create screenshot editor")
+            self._capture_failed("Could not open the screenshot editor. Please try again.")
+            return
         self.editor.saved.connect(self._remember_save_location)
         self.editor.finished.connect(self._finish_capture)
         self.editor.show()
@@ -143,7 +163,7 @@ class QuietShotApp:
         self._capture_pending = False
         self.overlay = None
         self.editor = None
-        self.floating.show()
+        self.button_visibility.refresh()
 
     def _hotkey_failed(self, message: str) -> None:
         LOG.warning("Global hotkey did not start: %s", message)
